@@ -27,8 +27,8 @@ import sys
 from datetime import datetime
 from time import sleep
 
-#min_temp = 25
-#max_temp = 26
+#min_temp = 25 # debugging
+#max_temp = 26 # debugging
 min_temp = 21.1 # ~70°C
 max_temp = 23.3 # ~74°C
 relay_pin = 22 # GPIO22
