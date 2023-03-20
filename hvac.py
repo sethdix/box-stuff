@@ -27,8 +27,10 @@ import sys
 from datetime import datetime
 from time import sleep
 
-min_temp = 25 # 21.1 # ~70°C
-max_temp = 26 # 23.3 # ~74°C
+#min_temp = 25
+#max_temp = 26
+min_temp = 21.1 # ~70°C
+max_temp = 23.3 # ~74°C
 relay_pin = 22 # GPIO22
 
 base_path = os.path.dirname(os.path.abspath(__file__))
@@ -71,9 +73,9 @@ def c_to_f(c):
 def log(msg):
   """Log message to file."""
   with open(os.path.join(base_path, 'hvac_messages.log'), 'a+') as hvac_logs:
-    hvac_logs.write(msg)
+    hvac_logs.write(f"\n{datetime.now()} {msg}")
 
-msg = f"{datetime.now()} [START]: Started service."
+msg = f"[START]: Started service; minimum temp: {min_temp}°C ({c_to_f(min_temp)}°F), maximum temp: {max_temp}°C ({c_to_f(max_temp)}°F)."
 # print(msg)
 log(msg)
 
@@ -82,28 +84,30 @@ try:
   while True:
     temp = sig_figs(sht31d.temperature, 3)
     hum = sig_figs(sht31d.relative_humidity, 3)
-    msg = f"{datetime.now()} [LOG]: {temp}°C ({c_to_f(temp)}°F), {hum}%RH"
-    # print(msg)
+    msg = f"[LOG]: {temp}°C ({c_to_f(temp)}°F), {hum}%RH"
+
     if checks == 0:
       log(msg)
+    checks = 0 if checks == 5 else checks + 1
+
     if temp <= min_temp and not GPIO.input(relay_pin):
-      msg = f"{datetime.now()} [RELAY]: Temperature is currently {temp}°C ({c_to_f(temp)}°F) and relay circuit is currently open; closing relay."
+      msg = f"[RELAY]: Temperature is currently {temp}°C ({c_to_f(temp)}°F) and relay circuit is currently open; closing relay."
       # print(msg)
       log(msg)
       GPIO.output(relay_pin, GPIO.HIGH)
     elif temp >= max_temp and GPIO.input(relay_pin):
-      msg = f"{datetime.now()} [RELAY]: Temperature is currently {temp}°C ({c_to_f(temp)}°F) and relay circuit is currently closed; opening relay."
+      msg = f"[RELAY]: Temperature is currently {temp}°C ({c_to_f(temp)}°F) and relay circuit is currently closed; opening relay."
       # print(msg)
       log(msg)
       GPIO.output(relay_pin, GPIO.LOW)
     sleep(10)
 except KeyboardInterrupt:
-  msg = f"{datetime.now()} : Caught keyboard interrupt, cleaning up and exiting now."
+  msg = f"[ERROR]: Caught keyboard interrupt, cleaning up and exiting now."
   # print(msg)
   log(msg)
   GPIO.output(relay_pin, GPIO.LOW)
   GPIO.cleanup()
-  msg = f"{datetime.now()} [STOP]: Stopped service."
+  msg = f"[STOP]: Stopped service."
   # print(msg)
   log(msg)
   sys.exit()
