@@ -21,13 +21,17 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import adafruit_sht31d
 import board
+import os
 import RPi.GPIO as GPIO
 import sys
+from datetime import datetime
 from time import sleep
 
-min_temp = 21.1 # ~70°C
-max_temp = 23.3 # ~74°C
+min_temp = 25 # 21.1 # ~70°C
+max_temp = 26 # 23.3 # ~74°C
 relay_pin = 22 # GPIO22
+
+base_path = os.path.dirname(os.path.abspath(__file__))
 
 """
 I2C (inter-integrated circuit) bus uses SDL (serial data line) and SCL (serial
@@ -57,26 +61,49 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(relay_pin, GPIO.OUT)
 
 def sig_figs(num, figs):
+  """Return <figs> number of significant figures passed in for <num> passed in."""
   return float(f'''{float(f"{num:.{figs}g}"):g}''')
 
 def c_to_f(c):
   """Convert °C to °F."""
   return sig_figs(float(c) * 9 / 5 + 32, 3)
 
+def log(msg):
+  """Log message to file."""
+  with open(os.path.join(base_path, 'hvac_messages.log'), 'a+') as hvac_logs:
+    hvac_logs.write(msg)
+
+msg = f"{datetime.now()} [START]: Started service."
+# print(msg)
+log(msg)
+
 try:
+  checks = 0
   while True:
     temp = sig_figs(sht31d.temperature, 3)
     hum = sig_figs(sht31d.relative_humidity, 3)
-    print(f"temperature: {temp}°C ({c_to_f(temp)}°F), humidity: {hum}%RH")
+    msg = f"{datetime.now()} [LOG]: {temp}°C ({c_to_f(temp)}°F), {hum}%RH"
+    # print(msg)
+    if checks == 0:
+      log(msg)
     if temp <= min_temp and not GPIO.input(relay_pin):
-      print(f"Temperature is currently {temp}°C ({c_to_f(temp)}°F) and relay circuit is currently open; closing relay.")
+      msg = f"{datetime.now()} [RELAY]: Temperature is currently {temp}°C ({c_to_f(temp)}°F) and relay circuit is currently open; closing relay."
+      # print(msg)
+      log(msg)
       GPIO.output(relay_pin, GPIO.HIGH)
     elif temp >= max_temp and GPIO.input(relay_pin):
-      print(f"Temperature is currently {temp}°C ({c_to_f(temp)}°F) and relay circuit is currently closed; opening relay.")
+      msg = f"{datetime.now()} [RELAY]: Temperature is currently {temp}°C ({c_to_f(temp)}°F) and relay circuit is currently closed; opening relay."
+      # print(msg)
+      log(msg)
       GPIO.output(relay_pin, GPIO.LOW)
     sleep(10)
 except KeyboardInterrupt:
-  print(f"\nCaught keyboard interrupt, cleaning up and exiting now.")
+  msg = f"{datetime.now()} : Caught keyboard interrupt, cleaning up and exiting now."
+  # print(msg)
+  log(msg)
   GPIO.output(relay_pin, GPIO.LOW)
   GPIO.cleanup()
+  msg = f"{datetime.now()} [STOP]: Stopped service."
+  # print(msg)
+  log(msg)
   sys.exit()
