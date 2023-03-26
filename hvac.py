@@ -89,7 +89,7 @@ class Hvac:
     signal.signal(signal.SIGINT, self.end_script)
     signal.signal(signal.SIGTERM, self.end_script)
   
-  def end_script(self):
+  def end_script(self, *args):
     GPIO.output(relay_pin, GPIO.LOW)
     GPIO.cleanup()
     msg = f"[STOP]: Stopping service."
