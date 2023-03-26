@@ -1,0 +1,11 @@
+[Unit]
+Description=Script to start hvac.py for temperature control
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/<<user/path_to_hvac.py>> # replace with location of hvac.py
+KillSignal=SIGINT
+ExecStop=/usr/bin/python3 /home/<<user/path_to_hvac_off.py>> # replace with location of hvac_off.py
+
+[Install]
+WantedBy=multi-user.target
