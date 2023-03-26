@@ -14,5 +14,3 @@
     * start: `sudo systemctl start hvac.service`
     * restart: `sudo systemctl restart hvac.service`
     * stop: `sudo systemctl stop hvac.service`
-
-
